@@ -26,26 +26,28 @@ async def upload_document(
             file.file,
             buffer
         )
+    
+    file.file.close()
 
-        # Initialize embeddings and vector store
-        embeddings = AzureOpenAIEmbeddings(
-            model=os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT"),
-            azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-            api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-            api_version=os.getenv("AZURE_OPENAI_API_VERSION")
-        )
+    embeddings = AzureOpenAIEmbeddings(
+        model=os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        api_version=os.getenv("AZURE_OPENAI_API_VERSION")
+    )
 
-        vector_store = AzureAISearchVectorStore(
-            endpoint=os.getenv("AZURE_SEARCH_ENDPOINT"),
-            api_key=os.getenv("AZURE_SEARCH_API_KEY"),
-            index_name=os.getenv("AZURE_SEARCH_INDEX_NAME")
-        )
+    vector_store = AzureAISearchVectorStore(
+        endpoint=os.getenv("AZURE_SEARCH_ENDPOINT"),
+        api_key=os.getenv("AZURE_SEARCH_API_KEY"),
+        index_name=os.getenv("AZURE_SEARCH_INDEX_NAME")
+    )
 
-        ingest_document(
-            pdf_path=str(file_path),
-            embeddings=embeddings,
-            vector_store=vector_store
-        )
+    # File is now cleanly written and safe to parse
+    ingest_document(
+        pdf_path=str(file_path),
+        embeddings=embeddings,
+        vector_store=vector_store
+    )
 
     return {
         "message": "Document uploaded successfully",

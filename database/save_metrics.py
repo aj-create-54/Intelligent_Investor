@@ -1,6 +1,33 @@
+import re
 from sqlalchemy import text
-
 from database.postgres_sql import get_engine
+
+
+def clean_and_join_list(data) -> str:
+    """
+    Safely stringifies, strips HTML code, and handles both text 
+    and list variations safely to return a clean string.
+    """
+    if not data:
+        return ""
+        
+    if isinstance(data, str):
+        return re.sub(r'<[^>]*>', '', data).strip()
+        
+    if isinstance(data, list):
+        cleaned_items = []
+        for item in data:
+            item_str = str(item).strip()
+            
+            if item_str.startswith("<button") or item_str.startswith("<svg"):
+                continue
+        
+            item_str = re.sub(r'<[^>]*>', '', item_str)
+            if item_str:
+                cleaned_items.append(item_str)
+        return "\n".join(cleaned_items)
+        
+    return str(data)
 
 
 def save_metrics(
@@ -45,6 +72,9 @@ def save_metrics(
     )
     """
 
+    raw_risks = metrics.get("Top Risk Factors") or metrics.get("risk_factors") or []
+    raw_drivers = metrics.get("Top Growth Drivers") or metrics.get("growth_drivers") or []
+
     # Use both capitalized and lower‑case keys from the extraction model
     params = {
         "company": company,
@@ -55,8 +85,8 @@ def save_metrics(
         "cash_flow": metrics.get("Cash Flow from Operating Activities") or metrics.get("cash_flow"),
         "total_assets": metrics.get("Total Assets") or metrics.get("total_assets"),
         "total_liabilities": metrics.get("Total Liabilities") or metrics.get("total_liabilities"),
-        "risk_factors": "\n".join(metrics.get("Top Risk Factors", []) or metrics.get("risk_factors", [])),
-        "growth_drivers": "\n".join(metrics.get("Top Growth Drivers", []) or metrics.get("growth_drivers", []))
+        "risk_factors": clean_and_join_list(raw_risks), 
+        "growth_drivers": clean_and_join_list(raw_drivers)
     }
 
     with engine.begin() as connection:
